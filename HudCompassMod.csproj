@@ -16,7 +16,6 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Mal.Mdk2.References" Version="2.2.3"/>
     </ItemGroup>
     <ItemGroup>
         <AdditionalFiles Include="*\**\*">
@@ -26,5 +25,37 @@
         <AdditionalFiles Remove="obj\**\*"/>
         <AdditionalFiles Remove="bin\**\*"/>
         <AdditionalFiles Remove="Data\SBC files can go here"/>
+    </ItemGroup>
+    <ItemGroup>
+      <Reference Include="ProtoBuf.Net.Core">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\ProtoBuf.Net.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="Sandbox.Common">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\Sandbox.Common.dll</HintPath>
+      </Reference>
+      <Reference Include="Sandbox.Game">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\Sandbox.Game.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Game">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Game.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Input">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Input.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Library">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Library.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Math">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Math.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Render">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Render.dll</HintPath>
+      </Reference>
+      <Reference Include="VRage.Render11">
+        <HintPath>..\..\Documents\torch-server\DedicatedServer64\VRage.Render11.dll</HintPath>
+      </Reference>
     </ItemGroup>
 </Project>
