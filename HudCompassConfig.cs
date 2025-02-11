@@ -70,23 +70,23 @@ namespace HudCompass.Data.Scripts.HudCompass
                     {
                         MyAPIGateway.Utilities.ShowMessage("HudCompass", "Error with config file, overwriting with default.");
                         MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default");
-                        //run the save function with default
+                        Save(Default);
                     }
                     else
                     {
                         HudCompassConfig config = MyAPIGateway.Utilities.SerializeFromXML<HudCompassConfig>(text);
-                        //run save with config
+                        Save(config);
                     }
                 }
                 else //there is no config present
                 {
                     MyLog.Default.WriteLineAndConsole($"HudCompass: Local config doesn't exist. Creating default");
-                    //run save with default
+                    Save(Default);
                 }
             }
             catch (Exception ex)
             {
-                //run save with default
+                Save(Default);
                 MyAPIGateway.Utilities.ShowMessage("HudCompass", "Error with config file, overwriting with default." + ex);
                 MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default {ex}");
 

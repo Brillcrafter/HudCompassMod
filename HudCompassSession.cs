@@ -42,7 +42,6 @@ namespace HudCompass
         {
             SessionName = string.Concat(Session.Name.Split(Path.GetInvalidFileNameChars()));
             if (Tools.IsDedicatedServer)
-            if (Tools.IsDedicatedServer)
                 return;
             
             //load the config
@@ -69,7 +68,7 @@ namespace HudCompass
             HudCompassConfig.Save(HudCompassConfig.Instance);
         }
 
-        public override void UpdateBeforeSimulation()//yeet all the stuff here
+        public override void Draw()//yeet all the stuff here
         {
             bool inCockpit = false;
             var shipController = MyAPIGateway.Session.Player.Controller.ControlledEntity as IMyShipController;
@@ -150,16 +149,17 @@ namespace HudCompass
         {
             if (HudApi.Heartbeat)
             {
+                
                 HudCompassConfig config = HudCompassConfig.Instance;
                 
                 var shipAziInfo = new StringBuilder(Convert.ToInt32(shipAzimuth));
-                var hudShipAzimuth = new HudAPIv2.HUDMessage(shipAziInfo, config.ShipAzimuth, null, 1, config.TextSize, true, true);
+                var hudShipAzimuth = new HudAPIv2.HUDMessage(shipAziInfo, config.ShipAzimuth, null, 2, config.TextSize, true, true);
                 var shipEleInfo = new StringBuilder(Convert.ToInt32(shipElevation));
-                var hudShipElevation = new HudAPIv2.HUDMessage(shipEleInfo, config.ShipElevation, null, 1, config.TextSize, true, true);
+                var hudShipElevation = new HudAPIv2.HUDMessage(shipEleInfo, config.ShipElevation, null, 2, config.TextSize, true, true);
                 var cameraAziInfo = new StringBuilder(Convert.ToInt32(cameraAzimuth));
-                var hudCameraAzimuth = new HudAPIv2.HUDMessage(cameraAziInfo, config.CameraAzimuth, null, 1, config.TextSize, true, true);
+                var hudCameraAzimuth = new HudAPIv2.HUDMessage(cameraAziInfo, new Vector2D( -0.7, -0.625), null, 2, config.TextSize, true, true);
                 var cameraEleInfo = new StringBuilder(Convert.ToInt32(cameraElevation));
-                var hudCameraElevation = new HudAPIv2.HUDMessage(cameraEleInfo, config.CameraElevation, null, 1, config.TextSize, true, true);
+                var hudCameraElevation = new HudAPIv2.HUDMessage(cameraEleInfo, config.CameraElevation, null, 2, config.TextSize, true, true);
         
                 //var shipRollIndicatorTexture = MyStringId.GetOrCompute("RollIndicator");
                 //var shipRollIndicator = new HudAPIv2.BillBoardHUDMessage(shipRollIndicatorTexture, Vector2D.Zero
@@ -170,12 +170,16 @@ namespace HudCompass
                     hudCameraAzimuth.Visible = true;
                     hudCameraElevation.Visible = true;
                 }
-                //if (inCockpit)
-                //{
-                //    hudShipAzimuth.Visible = true;
-                //    hudShipElevation.Visible = true;
+                if (inCockpit)
+                {
+                    hudShipAzimuth.Visible = true;
+                    hudShipElevation.Visible = true;
                 //    shipRollIndicator.Visible = true;
-                //}
+                }
+            }
+            else
+            {
+                MyLog.Default.Error($"HudCompass: No heartbeat and {inCockpit}");
             }
         }
     }
