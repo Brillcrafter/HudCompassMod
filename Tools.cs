@@ -2,7 +2,7 @@ using Sandbox.ModAPI;
 
 namespace HudCompassMod
 {
-    public class Tools
+    public static class Tools
     {
         
         

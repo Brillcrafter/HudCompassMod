@@ -94,7 +94,7 @@ namespace HudCompass.Data.Scripts.HudCompass
         }
         public static void Save(HudCompassConfig config)
         {
-            string Filename = "HudCompassConfig.cfg";
+            var Filename = "HudCompassConfig.cfg";
             try
             {
                 if (!Tools.IsDedicatedServer)
@@ -119,7 +119,7 @@ namespace HudCompass.Data.Scripts.HudCompass
            SettingsMenu = new HudAPIv2.MenuRootCategory("Hud Compass", 
                HudAPIv2.MenuRootCategory.MenuFlag.PlayerMenu, "Hud Compass Settings");
            CameraSubCategory = new HudAPIv2.MenuSubCategory("Camera Settings >>", SettingsMenu, "Camera Settings");
-           EnableCameraItem = new HudAPIv2.MenuItem($"Enable azi and Ele in Camera: {CameraAzimuth}", CameraSubCategory, ShowEnableCamera);
+           EnableCameraItem = new HudAPIv2.MenuItem($"Enable azi and Ele in Camera: {ShowCameraNumbers}", CameraSubCategory, ShowEnableCamera);
            CameraAzimuthXInput = new HudAPIv2.MenuTextInput($"Camera Azimuth X location: {CameraAzimuth.X}",
                CameraSubCategory,"", UpdateCamAziX);
            CameraAzimuthYInput = new HudAPIv2.MenuTextInput($"Camera Azimuth Y location: {CameraAzimuth.Y}",
@@ -143,7 +143,7 @@ namespace HudCompass.Data.Scripts.HudCompass
         private void ShowEnableCamera()
         {
             ShowCameraNumbers = !ShowCameraNumbers;
-            EnableCameraItem.Text = $"Enable azi and Ele in Camera: {CameraAzimuth}";
+            EnableCameraItem.Text = $"Enable azi and Ele in Camera: {ShowCameraNumbers}";
             Save(this);
         }
 
