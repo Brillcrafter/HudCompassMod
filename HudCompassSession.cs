@@ -116,7 +116,7 @@ namespace HudCompass
                 if (shipForward.Z < 0) shipRollAngleFloat = -shipRollAngleFloat;
             }
             Draw(ShipAzimuth, ShipElevation, cameraAzimuth, cameraElevation, shipRollAngleFloat, inCockpit);
-            DrawHeadingTicker();
+            DrawHeadingTicker(ShipAzimuth, inCockpit);
         }
 
         #endregion
