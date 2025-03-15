@@ -18,28 +18,35 @@ namespace HudCompass.Data.Scripts.HudCompass
 
         #region Config Settings
 
-        public static readonly HudCompassConfig Default = new HudCompassConfig()
+        public static readonly HudCompassConfig Default = new HudCompassConfig
         {
             ShowCameraNumbers = true,
-            ShipAzimuth = Vector2D.Zero,
-            ShipElevation = Vector2D.Zero,
-            CameraAzimuth = Vector2D.Zero,
-            CameraElevation = Vector2D.Zero,
-            TextSize = 1f
+            ShipAzimuth = new Vector2D(0, 0.95),
+            ShipElevation = new Vector2D(-0.95, 0),
+            CameraAzimuth = new Vector2D(0, 0.91),
+            CameraElevation = new Vector2D(-0.91, 0),
+            TextSize = 1f,
+            ShipAzimuthTicker = new Vector2D(0, 0.99),
+            ShipElevationTicker = new Vector2D(-0.99, 0),
         };
 
         [ProtoMember(1)]
         public bool ShowCameraNumbers { get; set; } = true;
         [ProtoMember(2)]
-        public Vector2D ShipAzimuth { get; set; } = Vector2D.Zero;
+        public Vector2D ShipAzimuth { get; set; } = new Vector2D(0, 0.95);
         [ProtoMember(3)]
-        public Vector2D ShipElevation { get; set; } = Vector2D.Zero;
+        public Vector2D ShipElevation { get; set; } = new Vector2D(-0.95, 0);
         [ProtoMember(4)]
-        public Vector2D CameraAzimuth { get; set; } = Vector2D.Zero;
+        public Vector2D CameraAzimuth { get; set; } = new Vector2D(0, 0.90);
         [ProtoMember(5)]
-        public Vector2D CameraElevation { get; set; } = Vector2D.Zero;
+        public Vector2D CameraElevation { get; set; } = new Vector2D(-0.90, 0);
         [ProtoMember(6)] 
         public float TextSize { get; set; } = 1f;
+        [ProtoMember(7)]
+        public Vector2D ShipAzimuthTicker { get; set; } = new Vector2D(0, 0.99);
+        [ProtoMember(8)]
+        public Vector2D ShipElevationTicker { get; set; } = new Vector2D(-0.99, 0);
+        
         #endregion
         
         #region HudAPI Fields
@@ -49,7 +56,8 @@ namespace HudCompass.Data.Scripts.HudCompass
         private HudAPIv2.MenuItem EnableCameraItem;
         private HudAPIv2.MenuTextInput TextSizeInput, ShipAzimuthXInput, ShipAzimuthYInput,
             CameraAzimuthXInput, CameraAzimuthYInput, ShipElevationXInput, ShipElevationYInput,
-            CameraElevationXInput, CameraElevationYInput;
+            CameraElevationXInput, CameraElevationYInput, ShipAzimuthTickerXInput, ShipAzimuthTickerYInput,
+            ShipElevationTickerXInput, ShipElevationTickerYInput;
         #endregion
 
         public static void InitConfig()
@@ -58,17 +66,20 @@ namespace HudCompass.Data.Scripts.HudCompass
 
             try
             {
-                var localFileExists = MyAPIGateway.Utilities.FileExistsInLocalStorage(Filename, typeof(HudCompassConfig));
+                var localFileExists = MyAPIGateway.Utilities.FileExistsInLocalStorage(Filename, 
+                    typeof(HudCompassConfig));
                 if (!Tools.IsDedicatedServer && localFileExists)
                 {
                     MyLog.Default.WriteLineAndConsole($"HudCompass: starting config. Local Exists: {localFileExists}");
-                    TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Filename, typeof(HudCompassConfig));
+                    TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Filename, 
+                        typeof(HudCompassConfig));
                     string text = reader.ReadToEnd();
                     reader.Close();
 
                     if (text.Length == 0)//if someone has been messing with it and its blank
                     {
-                        MyAPIGateway.Utilities.ShowMessage("HudCompass", "Error with config file, overwriting with default.");
+                        MyAPIGateway.Utilities.ShowMessage("HudCompass",
+                            "Error with config file, overwriting with default.");
                         MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default");
                         Save(Default);
                     }
@@ -87,10 +98,12 @@ namespace HudCompass.Data.Scripts.HudCompass
             catch (Exception ex)
             {
                 Save(Default);
-                MyAPIGateway.Utilities.ShowMessage("HudCompass", "Error with config file, overwriting with default." + ex);
+                MyAPIGateway.Utilities.ShowMessage("HudCompass",
+                    "Error with config file, overwriting with default." + ex);
                 MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default {ex}");
 
             }
+            
         }
         public static void Save(HudCompassConfig config)
         {
@@ -118,26 +131,43 @@ namespace HudCompass.Data.Scripts.HudCompass
         {
            SettingsMenu = new HudAPIv2.MenuRootCategory("Hud Compass", 
                HudAPIv2.MenuRootCategory.MenuFlag.PlayerMenu, "Hud Compass Settings");
-           CameraSubCategory = new HudAPIv2.MenuSubCategory("Camera Settings >>", SettingsMenu, "Camera Settings");
-           EnableCameraItem = new HudAPIv2.MenuItem($"Enable azi and Ele in Camera: {ShowCameraNumbers}", CameraSubCategory, ShowEnableCamera);
+           CameraSubCategory = new HudAPIv2.MenuSubCategory("Camera Settings >>", SettingsMenu,
+               "Camera Settings");
+           EnableCameraItem = new HudAPIv2.MenuItem($"Enable azi and Ele in Camera: {ShowCameraNumbers}", 
+               CameraSubCategory, ShowEnableCamera);
            CameraAzimuthXInput = new HudAPIv2.MenuTextInput($"Camera Azimuth X location: {CameraAzimuth.X}",
-               CameraSubCategory,"", UpdateCamAziX);
+               CameraSubCategory,"-1 to 1", UpdateCamAziX);
            CameraAzimuthYInput = new HudAPIv2.MenuTextInput($"Camera Azimuth Y location: {CameraAzimuth.Y}",
-               CameraSubCategory,"", UpdateCamAziY);
+               CameraSubCategory,"-1 to 1", UpdateCamAziY);
            CameraElevationXInput = new HudAPIv2.MenuTextInput($"Camera Elevation X location: {CameraElevation.X}",
-               CameraSubCategory,"", UpdateCamEleX);
+               CameraSubCategory,"-1 to 1", UpdateCamEleX);
            CameraElevationYInput = new HudAPIv2.MenuTextInput($"Camera Elevation Y location: {CameraElevation.Y}",
-               CameraSubCategory,"", UpdateCamEleY);
+               CameraSubCategory,"-1 to 1", UpdateCamEleY);
            
-           ShipSubCategory = new HudAPIv2.MenuSubCategory("Ship Settings", SettingsMenu, "Ship Settings");
+           ShipSubCategory = new HudAPIv2.MenuSubCategory("Ship Settings", SettingsMenu,
+               "Ship Settings");
            ShipAzimuthXInput = new HudAPIv2.MenuTextInput($"Ship Azimuth X location: {ShipAzimuth.X}", ShipSubCategory,
-               "",UpdateShipAziX);
+               "-1 to 1",UpdateShipAziX);
            ShipAzimuthYInput = new HudAPIv2.MenuTextInput($"Ship Azimuth Y location: {ShipAzimuth.Y}", ShipSubCategory,
-               "",UpdateShipAziY);
+               "-1 to 1",UpdateShipAziY);
            ShipElevationXInput = new HudAPIv2.MenuTextInput($"Ship Elevation X location: {ShipElevation.X}",
-               ShipSubCategory,"" ,UpdateShipEleX);
+               ShipSubCategory,"-1 to 1" ,UpdateShipEleX);
            ShipElevationYInput = new HudAPIv2.MenuTextInput($"Ship Elevation Y location: {ShipElevation.Y}",
-               ShipSubCategory,"", UpdateShipEleY);
+               ShipSubCategory,"-1 to 1", UpdateShipEleY);
+           ShipAzimuthTickerXInput = new HudAPIv2.MenuTextInput($"Ship Azimuth Ticker X location: {ShipAzimuthTicker.X}"
+               ,ShipSubCategory, "-1 to 1", UpdateShipAziTickerX);
+           ShipAzimuthTickerYInput = new HudAPIv2.MenuTextInput($"Ship Azimuth Ticker Y Location: {ShipAzimuthTicker.Y}"
+               , ShipSubCategory, "-1 to 1", UpdateShipAziTickerY);
+           ShipElevationXInput = new HudAPIv2.MenuTextInput(
+               $"Ship Elevation Ticker X Location: {ShipElevationTicker.X}",
+               ShipSubCategory, "-1 to 1", UpdateShipElevationTickerX);
+           ShipElevationTickerYInput = new HudAPIv2.MenuTextInput(
+               $"Ship Azimuth Ticker Y Location: {ShipElevationTicker.Y}",
+               ShipSubCategory, "-1 to 1", UpdateShipElevationTickerY);
+           
+           
+           
+           try { throw new InvalidOperationException("break my point"); }catch (Exception) { }//debugging
         }
 
         private void ShowEnableCamera()
@@ -240,6 +270,54 @@ namespace HudCompass.Data.Scripts.HudCompass
             elevation.Y = getter;
             ShipElevation = elevation;
             ShipElevationYInput.Text = $"Ship Elevation Y location: {ShipElevation.Y}";
+            Save(this);
+        }
+
+        private void UpdateShipAziTickerX(string obj)
+        {
+            float getter;
+            if (!float.TryParse(obj, out getter))
+                return;
+            var aziTicker = ShipAzimuthTicker;
+            aziTicker.X = getter;
+            ShipAzimuthTicker = aziTicker;
+            ShipAzimuthTickerXInput.Text = $"Ship Azimuth Ticker X location: {ShipAzimuthTicker.X}";
+            Save(this);
+        }
+
+        private void UpdateShipAziTickerY(string obj)
+        {
+            double getter;
+            if (!double.TryParse(obj, out getter))
+                return;
+            var aziTicker = ShipAzimuthTicker;
+            aziTicker.Y = getter;
+            ShipAzimuthTicker = aziTicker;
+            ShipAzimuthTickerYInput.Text = $"Ship Azimuth Ticker Y location: {ShipAzimuthTicker.Y}";
+            Save(this);
+        }
+
+        private void UpdateShipElevationTickerY(string obj)
+        {
+            float getter;
+            if (!float.TryParse(obj, out getter))
+                return;
+            var eleTicker = ShipElevationTicker;
+            eleTicker.Y = getter;
+            ShipElevationTicker = eleTicker;
+            ShipElevationTickerYInput.Text = $"Ship Elevation Ticker Y location: {ShipElevationTicker.Y}";
+            Save(this);
+        }
+
+        private void UpdateShipElevationTickerX(string obj)
+        {
+            float getter;
+            if (!float.TryParse(obj, out getter))
+                return;
+            var eleTicker = ShipElevationTicker;
+            eleTicker.X = getter;
+            ShipElevationTicker = eleTicker;
+            ShipElevationTickerXInput.Text = $"Ship Elevation Ticker X location: {ShipElevationTicker.X}";
             Save(this);
         }
         
