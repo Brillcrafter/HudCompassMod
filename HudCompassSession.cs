@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.IO;
 using System.Text;
 using Draygo.API;
@@ -9,6 +10,7 @@ using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Utils;
 using VRageMath;
+using Vector3 = VRageMath.Vector3;
 
 namespace HudCompass
 {
@@ -85,6 +87,7 @@ namespace HudCompass
             var shipRollAngleFloat = 0f;
             double ShipAzimuth = 0;
             double ShipElevation = 0;
+            float rollFloat = 0;
             
             var cameraViewMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             var cameraForward = cameraViewMatrix.Forward;
@@ -98,18 +101,15 @@ namespace HudCompass
             if (shipController != null)
             {
                 inCockpit = true;
-                var shipForward = shipController.WorldMatrix.Forward;
-                var shipUp = shipController.WorldMatrix.Up;
+                var shipForward = shipController.WorldMatrix.Forward.Normalized();
+                rollFloat = CalculateRoll(shipForward, shipController.WorldMatrix.Up, shipController.WorldMatrix.Right);
+                try { throw new InvalidOperationException("break my point"); }catch (Exception) { }//debugging
                 ShipAzimuth = Math.Atan2(shipForward.X, shipForward.Y) * (180.0 / Math.PI);
                 ShipElevation = Math.Asin(shipForward.Z) * (180.0 / Math.PI);
                 ShipAzimuth = (ShipAzimuth + 360) % 360;
                 ShipElevation = MathHelperD.Clamp(ShipElevation, -90, 90);
-                var shipRollAngle = Math.Atan2(shipUp.X, shipUp.Z);
-                //compass bearings done, time to do the roll indicator
-                shipRollAngleFloat = Convert.ToSingle(shipRollAngle);
-                if (shipForward.Z < 0) shipRollAngleFloat = -shipRollAngleFloat;
             }
-            DrawMessages(ShipAzimuth, ShipElevation, cameraAzimuth, cameraElevation, shipRollAngleFloat, inCockpit);
+            DrawMessages(ShipAzimuth, ShipElevation, cameraAzimuth, cameraElevation, rollFloat , inCockpit);
             DrawHeadingTicker(ShipAzimuth, inCockpit);
             DrawElevationTicker(ShipElevation, inCockpit);
         }
@@ -140,7 +140,7 @@ namespace HudCompass
         
                     var shipRollIndicatorTexture = MyStringId.GetOrCompute("RollIndicator");
                     shipRollIndicator = new HudAPIv2.BillBoardHUDMessage(shipRollIndicatorTexture, Vector2D.Zero
-                        , Color.White, null, 1, 1D, 1F, 1F, rollAngle);
+                        , Color.White, null, -1, 0.15D, 1F, 1F, rollAngle);
                     FirstDraw = true;
                 }
                 else
@@ -185,6 +185,24 @@ namespace HudCompass
             }
         }
 
+        private float CalculateRoll(Vector3D Forward, Vector3D Up, Vector3D Right)
+        {
+            var worldUp = new Vector3D(0, 0, 1);
+            var shipUp = Vector3D.Normalize(Up);
+            var shipRight = Vector3D.Normalize(Right);
+            var shipForward = Vector3D.Normalize(Forward);
+            var projectedWorldUp = worldUp - Vector3D.Dot(worldUp, shipForward) * shipForward;
+            if (projectedWorldUp.LengthSquared() < 1e-6f)
+            {
+                return 0f;
+            }
+            projectedWorldUp = Vector3D.Normalize(projectedWorldUp);
+            var cosTheta = Vector3D.Dot(shipUp, projectedWorldUp);
+            var sinTheta = Vector3D.Dot(shipRight, projectedWorldUp);
+            var rollAngle = (float)Math.Atan2(sinTheta, cosTheta);
+            return rollAngle;
+        }
+        
         private void DrawHeadingTicker(double shipAzimuth, bool inCockpit)
         {
             if (!inCockpit)

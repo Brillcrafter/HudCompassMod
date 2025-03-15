@@ -158,16 +158,12 @@ namespace HudCompass.Data.Scripts.HudCompass
                ,ShipSubCategory, "-1 to 1", UpdateShipAziTickerX);
            ShipAzimuthTickerYInput = new HudAPIv2.MenuTextInput($"Ship Azimuth Ticker Y Location: {ShipAzimuthTicker.Y}"
                , ShipSubCategory, "-1 to 1", UpdateShipAziTickerY);
-           ShipElevationXInput = new HudAPIv2.MenuTextInput(
+           ShipElevationTickerXInput = new HudAPIv2.MenuTextInput(
                $"Ship Elevation Ticker X Location: {ShipElevationTicker.X}",
                ShipSubCategory, "-1 to 1", UpdateShipElevationTickerX);
            ShipElevationTickerYInput = new HudAPIv2.MenuTextInput(
                $"Ship Azimuth Ticker Y Location: {ShipElevationTicker.Y}",
                ShipSubCategory, "-1 to 1", UpdateShipElevationTickerY);
-           
-           
-           
-           try { throw new InvalidOperationException("break my point"); }catch (Exception) { }//debugging
         }
 
         private void ShowEnableCamera()
