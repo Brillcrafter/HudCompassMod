@@ -62,7 +62,7 @@ namespace HudCompass.Data.Scripts.HudCompass
 
         public static void InitConfig()
         {
-            string Filename = "HudCompassConfig.cfg";
+            string Filename = "FlightHUDCfg.cfg";
 
             try
             {
@@ -70,7 +70,7 @@ namespace HudCompass.Data.Scripts.HudCompass
                     typeof(HudCompassConfig));
                 if (!Tools.IsDedicatedServer && localFileExists)
                 {
-                    MyLog.Default.WriteLineAndConsole($"HudCompass: starting config. Local Exists: {localFileExists}");
+                    MyLog.Default.WriteLineAndConsole($"Flight HUD: starting config. Local Exists: {localFileExists}");
                     TextReader reader = MyAPIGateway.Utilities.ReadFileInLocalStorage(Filename, 
                         typeof(HudCompassConfig));
                     string text = reader.ReadToEnd();
@@ -78,9 +78,9 @@ namespace HudCompass.Data.Scripts.HudCompass
 
                     if (text.Length == 0)//if someone has been messing with it and its blank
                     {
-                        MyAPIGateway.Utilities.ShowMessage("HudCompass",
+                        MyAPIGateway.Utilities.ShowMessage("Flight HUD",
                             "Error with config file, overwriting with default.");
-                        MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default");
+                        MyLog.Default.Error($"Flight HUD: Error with config file, overwriting with default");
                         Save(Default);
                     }
                     else
@@ -91,28 +91,28 @@ namespace HudCompass.Data.Scripts.HudCompass
                 }
                 else //there is no config present
                 {
-                    MyLog.Default.WriteLineAndConsole($"HudCompass: Local config doesn't exist. Creating default");
+                    MyLog.Default.WriteLineAndConsole($"FlightHUD: Local config doesn't exist. Creating default");
                     Save(Default);
                 }
             }
             catch (Exception ex)
             {
                 Save(Default);
-                MyAPIGateway.Utilities.ShowMessage("HudCompass",
+                MyAPIGateway.Utilities.ShowMessage("Flight HUD",
                     "Error with config file, overwriting with default." + ex);
-                MyLog.Default.Error($"HudCompass: Error with config file, overwriting with default {ex}");
+                MyLog.Default.Error($"Flight HUD: Error with config file, overwriting with default {ex}");
 
             }
             
         }
         public static void Save(HudCompassConfig config)
         {
-            var Filename = "HudCompassConfig.cfg";
+            var Filename = "FlightHUDCfg.cfg";
             try
             {
                 if (!Tools.IsDedicatedServer)
                 {
-                    MyLog.Default.WriteLineAndConsole($"HudCompass: Saving config.");
+                    MyLog.Default.WriteLineAndConsole($"Flight HUD: Saving config.");
                     TextWriter writer;
                     writer = MyAPIGateway.Utilities.WriteFileInLocalStorage(Filename, typeof(HudCompassConfig));
                     writer.Write(MyAPIGateway.Utilities.SerializeToXML(config));
@@ -122,15 +122,15 @@ namespace HudCompass.Data.Scripts.HudCompass
             }
             catch (Exception ex)
             {
-                MyLog.Default.Error($"HudCompass: Error saving config file {ex}");
+                MyLog.Default.Error($"Flight HUD: Error saving config file {ex}");
             }
         }
 
         //setup the settings menu
         public void InitMenu()
         {
-           SettingsMenu = new HudAPIv2.MenuRootCategory("Hud Compass", 
-               HudAPIv2.MenuRootCategory.MenuFlag.PlayerMenu, "Hud Compass Settings");
+           SettingsMenu = new HudAPIv2.MenuRootCategory("Flight HUD", 
+               HudAPIv2.MenuRootCategory.MenuFlag.PlayerMenu, "Flight HUD Settings");
            CameraSubCategory = new HudAPIv2.MenuSubCategory("Camera Settings >>", SettingsMenu,
                "Camera Settings");
            EnableCameraItem = new HudAPIv2.MenuItem($"Enable azi and Ele in Camera: {ShowCameraNumbers}", 

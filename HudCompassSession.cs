@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using System.IO;
 using System.Text;
 using Draygo.API;
 using HudCompass.Data.Scripts.HudCompass;
 using HudCompassMod;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using Vector3 = VRageMath.Vector3;
 
 namespace HudCompass
 {
@@ -18,14 +18,16 @@ namespace HudCompass
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class HudCompassSession : MySessionComponentBase
     {
-        public const string Keyword = "/HudC";
-        public const string ModName = "HudCompass";
+        public const string Keyword = "/FlightH";
+        public const string ModName = "Flight HUD";
         public static HudCompassSession Instance { get; private set; }
         public string SessionName = "";
-        public string HudCompassFile = "HudCompass";
+        public string HudCompassFile = "FlightHUD";
         private HudAPIv2 HudApi;
         private bool FirstDraw;
         private double _TickerScale = 1D;
+        private bool _registeredController;
+        private IMyShipController _controllableEntity;
         
         
         #region HUD Variables
@@ -58,7 +60,17 @@ namespace HudCompass
             HudCompassConfig.InitConfig();
             HudApi = new HudAPIv2(HudCompassConfig.Instance.InitMenu);
             if (HudApi == null)
-                MyAPIGateway.Utilities.ShowMessage("HudCompass", "TextHudAPI failed to register");
+                MyAPIGateway.Utilities.ShowMessage("Flight HUD", "TextHudAPI failed to register");
+            try
+            {
+                MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
+                _registeredController = true;
+                MyLog.Default.WriteLineAndConsole("Flight HUD: Registered ControlledEntityChanged in BeforeStart");
+            }
+            catch
+            {
+                MyLog.Default.WriteLineAndConsole("Flight HUD: Failed to register ControlledEntityChanged in BeforeStart");
+            }
         }
 
         public override void SaveData()
@@ -75,15 +87,31 @@ namespace HudCompass
                 return;
             //save config
             HudCompassConfig.Save(HudCompassConfig.Instance);
+            if (_registeredController)
+            {
+                MyAPIGateway.Session.Player.Controller.ControlledEntityChanged -= GridChange;
+                _registeredController = false;
+            }
         }
 
         public override void Draw()//yeet all the stuff here
         {
+            if (!_registeredController)
+            {
+                try
+                {
+                    MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
+                    _registeredController = true;
+                    MyLog.Default.WriteLineAndConsole("Flight HUD: Registered ControllerEntityChanged in Draw");
+                }
+                catch
+                {
+                    MyLog.Default.WriteLineAndConsole("Flight HUD: failed to Register ControllerEntityChanged in Draw");
+                }
+            }
             var inCockpit = false;
-            var shipController = MyAPIGateway.Session.Player.Controller.ControlledEntity as IMyShipController;
             if (Tools.IsDedicatedServer)
                 return;
-            
             var shipRollAngleFloat = 0f;
             double ShipAzimuth = 0;
             double ShipElevation = 0;
@@ -98,11 +126,11 @@ namespace HudCompass
             cameraAzimuth = (cameraAzimuth + 360) % 360;
             cameraElevation = MathHelperD.Clamp(cameraElevation, -90, 90);
             
-            if (shipController != null)
+            if (_controllableEntity != null)
             {
                 inCockpit = true;
-                var shipForward = shipController.WorldMatrix.Forward.Normalized();
-                rollFloat = CalculateRoll(shipForward, shipController.WorldMatrix.Up, shipController.WorldMatrix.Right);
+                var shipForward = _controllableEntity.WorldMatrix.Forward.Normalized();
+                rollFloat = CalculateRoll(shipForward, _controllableEntity.WorldMatrix.Up, _controllableEntity.WorldMatrix.Right);
                 try { throw new InvalidOperationException("break my point"); }catch (Exception) { }//debugging
                 ShipAzimuth = Math.Atan2(shipForward.X, shipForward.Y) * (180.0 / Math.PI);
                 ShipElevation = Math.Asin(shipForward.Z) * (180.0 / Math.PI);
@@ -181,7 +209,7 @@ namespace HudCompass
             }
             else
             {
-                MyLog.Default.Error($"HudCompass: No heartbeat and {inCockpit}");
+                MyLog.Default.Error($"Flight HUD: No heartbeat and {inCockpit}");
             }
         }
 
@@ -315,6 +343,19 @@ namespace HudCompass
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipElevationTicker, new Vector2D(0D, (double)i/100),
                     -1,_TickerScale)));
+            }
+        }
+
+        private void GridChange(VRage.Game.ModAPI.Interfaces.IMyControllableEntity previousEnt,
+            VRage.Game.ModAPI.Interfaces.IMyControllableEntity newEnt)
+        {
+            if (newEnt is IMyCharacter)
+            {
+                _controllableEntity = null;
+            }
+            else if (newEnt is IMyShipController)
+            {
+                _controllableEntity = (IMyShipController)newEnt;
             }
         }
     }
