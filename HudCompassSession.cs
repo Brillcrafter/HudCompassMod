@@ -5,8 +5,8 @@ using System.Text;
 using Draygo.API;
 using HudCompass.Data.Scripts.HudCompass;
 using HudCompassMod;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using SeamlessClient.Messages;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Utils;
@@ -19,26 +19,27 @@ namespace HudCompass
     public class HudCompassSession : MySessionComponentBase
     {
         public const string Keyword = "/FlightH";
-        public const string ModName = "Flight HUD";
+        private const string ModName = "Flight HUD";
+        private const ushort SeamlessClientNetId = 2936;
         public static HudCompassSession Instance { get; private set; }
         public string SessionName = "";
         public string HudCompassFile = "FlightHUD";
-        private HudAPIv2 HudApi;
-        private bool FirstDraw;
-        private double _TickerScale = 1D;
+        private HudAPIv2 _hudApi;
+        private bool _firstDraw;
+        private const double TickerScale = 1D;
         private bool _registeredController;
         private IMyShipController _controllableEntity;
         
         
         #region HUD Variables
         
-        private List<CompassDivisionClass> _HeadingCompassClass = new List<CompassDivisionClass>();
-        private List<CompassDivisionClass> _ElevationCompassClass = new List<CompassDivisionClass>();
-        private HudAPIv2.HUDMessage hudShipAzimuth;
-        private HudAPIv2.HUDMessage hudShipElevation;
-        private HudAPIv2.HUDMessage hudCameraAzimuth;
-        private HudAPIv2.HUDMessage hudCameraElevation;
-        private HudAPIv2.BillBoardHUDMessage shipRollIndicator;
+        private readonly List<CompassDivisionClass> _headingCompassClass = new List<CompassDivisionClass>();
+        private readonly List<CompassDivisionClass> _elevationCompassClass = new List<CompassDivisionClass>();
+        private HudAPIv2.HUDMessage _hudShipAzimuth;
+        private HudAPIv2.HUDMessage _hudShipElevation;
+        private HudAPIv2.HUDMessage _hudCameraAzimuth;
+        private HudAPIv2.HUDMessage _hudCameraElevation;
+        private HudAPIv2.BillBoardHUDMessage _shipRollIndicator;
         
         #endregion
         #region Session Overrides
@@ -55,22 +56,12 @@ namespace HudCompass
             SessionName = string.Concat(Session.Name.Split(Path.GetInvalidFileNameChars()));
             if (Tools.IsDedicatedServer)
                 return;
-            
             //load the config
             HudCompassConfig.InitConfig();
-            HudApi = new HudAPIv2(HudCompassConfig.Instance.InitMenu);
-            if (HudApi == null)
+            _hudApi = new HudAPIv2(HudCompassConfig.Instance.InitMenu);
+            if (_hudApi == null)
                 MyAPIGateway.Utilities.ShowMessage("Flight HUD", "TextHudAPI failed to register");
-            try
-            {
-                MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
-                _registeredController = true;
-                MyLog.Default.WriteLineAndConsole("Flight HUD: Registered ControlledEntityChanged in BeforeStart");
-            }
-            catch
-            {
-                MyLog.Default.WriteLineAndConsole("Flight HUD: Failed to register ControlledEntityChanged in BeforeStart");
-            }
+            MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(SeamlessClientNetId, MessageHandler);
         }
 
         public override void SaveData()
@@ -87,39 +78,52 @@ namespace HudCompass
                 return;
             //save config
             HudCompassConfig.Save(HudCompassConfig.Instance);
+            MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(SeamlessClientNetId, MessageHandler);
+            _hudApi?.Unload();
             if (_registeredController)
             {
                 MyAPIGateway.Session.Player.Controller.ControlledEntityChanged -= GridChange;
                 _registeredController = false;
             }
         }
+        
+        private void MessageHandler(ushort packetID, byte[] data, ulong sender, bool fromServer)
+        {
+            if (!fromServer || sender == 0)
+                return;
+
+            ClientMessage msg = MyAPIGateway.Utilities.SerializeFromBinary<ClientMessage>(data);
+            if (msg == null)
+                return;
+
+            if(msg.MessageType == ClientMessageType.FirstJoin)
+            {
+                _registeredController = false;
+                MyLog.Default.WriteLine(ModName + " Seamless message - First Join");
+            }
+        }
 
         public override void Draw()//yeet all the stuff here
         {
-            if (!_registeredController)
+            if (!Tools.IsDedicatedServer && !_registeredController && MyAPIGateway.Session?.Player?.Controller != null)
             {
-                try
-                {
-                    MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
-                    _registeredController = true;
-                    MyLog.Default.WriteLineAndConsole("Flight HUD: Registered ControllerEntityChanged in Draw");
-                }
-                catch
-                {
-                    MyLog.Default.WriteLineAndConsole("Flight HUD: failed to Register ControllerEntityChanged in Draw");
-                }
+                _registeredController = true;
+                Session.Player.Controller.ControlledEntityChanged += GridChange;
+                MyLog.Default.WriteLine(ModName + " Registered Client Grid Change");
+                GridChange(null, MyAPIGateway.Session.Player.Controller.ControlledEntity);
             }
             var inCockpit = false;
             if (Tools.IsDedicatedServer)
                 return;
-            var shipRollAngleFloat = 0f;
-            double ShipAzimuth = 0;
-            double ShipElevation = 0;
-            float rollFloat = 0;
-            
-            var cameraViewMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+            var shipAzimuth = 0d;
+            var shipElevation = 0d;
+            var rollFloat = 0f;
+            var cameraViewMatrix = MatrixD.Zero;
+            if (MyAPIGateway.Session != null)
+            {
+                cameraViewMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+            }
             var cameraForward = cameraViewMatrix.Forward;
-            
             //camera orientation
             var cameraAzimuth = Math.Atan2(cameraForward.X, cameraForward.Y) * (180.0 / Math.PI);
             var cameraElevation = Math.Asin(cameraForward.Z) * (180.0 / Math.PI);
@@ -131,15 +135,14 @@ namespace HudCompass
                 inCockpit = true;
                 var shipForward = _controllableEntity.WorldMatrix.Forward.Normalized();
                 rollFloat = CalculateRoll(shipForward, _controllableEntity.WorldMatrix.Up, _controllableEntity.WorldMatrix.Right);
-                try { throw new InvalidOperationException("break my point"); }catch (Exception) { }//debugging
-                ShipAzimuth = Math.Atan2(shipForward.X, shipForward.Y) * (180.0 / Math.PI);
-                ShipElevation = Math.Asin(shipForward.Z) * (180.0 / Math.PI);
-                ShipAzimuth = (ShipAzimuth + 360) % 360;
-                ShipElevation = MathHelperD.Clamp(ShipElevation, -90, 90);
+                shipAzimuth = Math.Atan2(shipForward.X, shipForward.Y) * (180.0 / Math.PI);
+                shipElevation = Math.Asin(shipForward.Z) * (180.0 / Math.PI);
+                shipAzimuth = (shipAzimuth + 360) % 360;
+                shipElevation = MathHelperD.Clamp(shipElevation, -90, 90);
             }
-            DrawMessages(ShipAzimuth, ShipElevation, cameraAzimuth, cameraElevation, rollFloat , inCockpit);
-            DrawHeadingTicker(ShipAzimuth, inCockpit);
-            DrawElevationTicker(ShipElevation, inCockpit);
+            DrawMessages(shipAzimuth, shipElevation, cameraAzimuth, cameraElevation, rollFloat , inCockpit);
+            DrawHeadingTicker(shipAzimuth, inCockpit);
+            DrawElevationTicker(shipElevation, inCockpit);
         }
 
         #endregion
@@ -147,64 +150,64 @@ namespace HudCompass
         private void DrawMessages(double shipAzimuth, double shipElevation, double cameraAzimuth, double cameraElevation,
             float rollAngle, bool inCockpit)
         {
-            if (HudApi.Heartbeat)
+            if (_hudApi.Heartbeat)
             {
                 var config = HudCompassConfig.Default;
-                if (!FirstDraw)
+                if (!_firstDraw)
                 {
                     CreateHudMessageOffsets();
                     var shipAziInfo = new StringBuilder(Convert.ToInt32(shipAzimuth).ToString());
-                    hudShipAzimuth = new HudAPIv2.HUDMessage(shipAziInfo, config.ShipAzimuth, null,
+                    _hudShipAzimuth = new HudAPIv2.HUDMessage(shipAziInfo, config.ShipAzimuth, null,
                         -1, config.TextSize, true, true);
                     var shipEleInfo = new StringBuilder(Convert.ToInt32(shipElevation).ToString());
-                    hudShipElevation = new HudAPIv2.HUDMessage(shipEleInfo, config.ShipElevation, null,
+                    _hudShipElevation = new HudAPIv2.HUDMessage(shipEleInfo, config.ShipElevation, null,
                         -1, config.TextSize, true, true);
                     var cameraAziInfo = new StringBuilder(Convert.ToInt32(cameraAzimuth).ToString());
-                    hudCameraAzimuth = new HudAPIv2.HUDMessage(cameraAziInfo, config.CameraAzimuth, null,
+                    _hudCameraAzimuth = new HudAPIv2.HUDMessage(cameraAziInfo, config.CameraAzimuth, null,
                         -1, config.TextSize, true, true);
                     var cameraEleInfo = new StringBuilder(Convert.ToInt32(cameraElevation).ToString());
-                    hudCameraElevation = new HudAPIv2.HUDMessage(cameraEleInfo, config.CameraElevation, null,
+                    _hudCameraElevation = new HudAPIv2.HUDMessage(cameraEleInfo, config.CameraElevation, null,
                         -1, config.TextSize, true, true);
         
                     var shipRollIndicatorTexture = MyStringId.GetOrCompute("RollIndicator");
-                    shipRollIndicator = new HudAPIv2.BillBoardHUDMessage(shipRollIndicatorTexture, Vector2D.Zero
+                    _shipRollIndicator = new HudAPIv2.BillBoardHUDMessage(shipRollIndicatorTexture, Vector2D.Zero
                         , Color.White, null, -1, 0.15D, 1F, 1F, rollAngle);
-                    FirstDraw = true;
+                    _firstDraw = true;
                 }
                 else
                 {
-                    hudShipAzimuth.Message = new StringBuilder(Convert.ToInt32(shipAzimuth).ToString());
-                    hudShipAzimuth.Origin = config.ShipAzimuth;
-                    hudShipElevation.Message = new StringBuilder(Convert.ToInt32(shipElevation).ToString());
-                    hudShipElevation.Origin = config.ShipElevation;
-                    hudCameraAzimuth.Message = new StringBuilder(Convert.ToInt32(cameraAzimuth).ToString());
-                    hudCameraAzimuth.Origin = config.CameraAzimuth;
-                    hudCameraElevation.Message = new StringBuilder(Convert.ToInt32(cameraElevation).ToString());
-                    hudCameraElevation.Origin = config.CameraElevation;
-                    shipRollIndicator.Rotation = rollAngle;
+                    _hudShipAzimuth.Message = new StringBuilder(Convert.ToInt32(shipAzimuth).ToString());
+                    _hudShipAzimuth.Origin = config.ShipAzimuth;
+                    _hudShipElevation.Message = new StringBuilder(Convert.ToInt32(shipElevation).ToString());
+                    _hudShipElevation.Origin = config.ShipElevation;
+                    _hudCameraAzimuth.Message = new StringBuilder(Convert.ToInt32(cameraAzimuth).ToString());
+                    _hudCameraAzimuth.Origin = config.CameraAzimuth;
+                    _hudCameraElevation.Message = new StringBuilder(Convert.ToInt32(cameraElevation).ToString());
+                    _hudCameraElevation.Origin = config.CameraElevation;
+                    _shipRollIndicator.Rotation = rollAngle;
                 }
                 if (config.ShowCameraNumbers)
                 {
-                    hudCameraAzimuth.Visible = true;
-                    hudCameraElevation.Visible = true;
+                    _hudCameraAzimuth.Visible = true;
+                    _hudCameraElevation.Visible = true;
                 }
                 else
                 {
-                    hudCameraAzimuth.Visible = false;
-                    hudCameraElevation.Visible = false;
+                    _hudCameraAzimuth.Visible = false;
+                    _hudCameraElevation.Visible = false;
                 }
 
                 if (inCockpit)
                 {
-                    hudShipAzimuth.Visible = true;
-                    hudShipElevation.Visible = true;
-                    shipRollIndicator.Visible = true;
+                    _hudShipAzimuth.Visible = true;
+                    _hudShipElevation.Visible = true;
+                    _shipRollIndicator.Visible = true;
                 }
                 else
                 {
-                    hudShipAzimuth.Visible = false;
-                    hudShipElevation.Visible = false;
-                    shipRollIndicator.Visible = false;
+                    _hudShipAzimuth.Visible = false;
+                    _hudShipElevation.Visible = false;
+                    _shipRollIndicator.Visible = false;
                 }
             }
             else
@@ -235,7 +238,7 @@ namespace HudCompass
         {
             if (!inCockpit)
             {
-                foreach (var division in _HeadingCompassClass)
+                foreach (var division in _headingCompassClass)
                 {
                     division.Division.Message = new StringBuilder(1);
                 }
@@ -243,7 +246,7 @@ namespace HudCompass
             }
             var config = HudCompassConfig.Default;
             var tickerOffset = shipAzimuth * 0.01;
-            foreach (var division in _HeadingCompassClass)
+            foreach (var division in _headingCompassClass)
             {
                 if (tickerOffset - division.Offset < -0.45D || tickerOffset - division.Offset > 0.45D)
                     division.Division.Message = new StringBuilder(1);
@@ -258,7 +261,7 @@ namespace HudCompass
         {
             if (!inCockpit)
             {
-                foreach (var division in _ElevationCompassClass)
+                foreach (var division in _elevationCompassClass)
                 {
                     division.Division.Message = new StringBuilder(1);
                 }
@@ -266,7 +269,7 @@ namespace HudCompass
             }
             var config = HudCompassConfig.Default;
             var tickerOffset = shipElevation * 0.01;
-            foreach (var division in _ElevationCompassClass)
+            foreach (var division in _elevationCompassClass)
             {
                 if (tickerOffset - division.Offset < -0.45D || tickerOffset - division.Offset > 0.45D)
                     division.Division.Message = new StringBuilder(1);
@@ -285,64 +288,64 @@ namespace HudCompass
             {
                 //starting from the left
                 if(i == 0)//these are for the cardinal directions
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true,"N", (double)i/100 
+                    _headingCompassClass.Add(new CompassDivisionClass(true,"N", (double)i/100 
                         , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100 , 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if(i == 90)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true, "E", (double)i/100
+                    _headingCompassClass.Add(new CompassDivisionClass(true, "E", (double)i/100
                         , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if(i == 180)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true, "S", (double)i/100
+                    _headingCompassClass.Add(new CompassDivisionClass(true, "S", (double)i/100
                         , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if (i == 270)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true, "W", (double)i/100
+                    _headingCompassClass.Add(new CompassDivisionClass(true, "W", (double)i/100
                         , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if (i == 360)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true, "N", (double)i/100
+                    _headingCompassClass.Add(new CompassDivisionClass(true, "N", (double)i/100
                         , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if (i < 0)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true,(360 - i * -1).ToString(),
+                    _headingCompassClass.Add(new CompassDivisionClass(true,(360 - i * -1).ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if (i > 360)
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true,(i - 360).ToString(),
+                    _headingCompassClass.Add(new CompassDivisionClass(true,(i - 360).ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else 
-                    _HeadingCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
+                    _headingCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipAzimuthTicker, new Vector2D((double)i/100, 0D),
-                    -1,_TickerScale)));
+                    -1,TickerScale)));
             }
             // for elevation ticker
             for (var i = -135; i < 135; i += 5)
             {
                 if (i < -90)
-                    _ElevationCompassClass.Add(new CompassDivisionClass(true,(90 - i * -1).ToString(),
+                    _elevationCompassClass.Add(new CompassDivisionClass(true,(90 - i * -1).ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipElevationTicker, new Vector2D(0D, (double)i/100),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else if (i > 90)
-                    _ElevationCompassClass.Add(new CompassDivisionClass(true,(i - 90).ToString(),
+                    _elevationCompassClass.Add(new CompassDivisionClass(true,(i - 90).ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipElevationTicker, new Vector2D(0D, (double)i/100),
-                        -1,_TickerScale)));
+                        -1,TickerScale)));
                 else 
-                    _ElevationCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
+                    _elevationCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
                         (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                         config.ShipElevationTicker, new Vector2D(0D, (double)i/100),
-                    -1,_TickerScale)));
+                    -1,TickerScale)));
             }
         }
 
