@@ -105,10 +105,10 @@ namespace HudCompass
 
         public override void Draw()//yeet all the stuff here
         {
-            if (!Tools.IsDedicatedServer && !_registeredController && MyAPIGateway.Session?.Player?.Controller != null)
+            if (!_registeredController && MyAPIGateway.Session?.Player?.Controller != null)
             {
                 _registeredController = true;
-                Session.Player.Controller.ControlledEntityChanged += GridChange;
+                MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
                 MyLog.Default.WriteLine(ModName + " Registered Client Grid Change");
                 GridChange(null, MyAPIGateway.Session.Player.Controller.ControlledEntity);
             }
