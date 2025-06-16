@@ -15,6 +15,9 @@ namespace HudCompassMod
 
         [XmlElement(ElementName = "ShipTickerSettings")]
         public ShipTickerConfig ShipTicker;
+        
+        [XmlElement(ElementName = "GlobalSettings")]
+        public GlobalConfig Global;
 
         protected override HcConfig GetDefaults()
         {
@@ -22,7 +25,8 @@ namespace HudCompassMod
             {
                 Camera = CameraConfig.Defaults,
                 Ship = ShipConfig.Defaults,
-                ShipTicker = ShipTickerConfig.Defaults
+                ShipTicker = ShipTickerConfig.Defaults,
+                Global = GlobalConfig.Defaults
             };
         }
     }
@@ -37,6 +41,7 @@ namespace HudCompassMod
         
         [XmlElement(ElementName = "CameraEle")]
         public Vector2D CameraEle;
+        
 
         protected override CameraConfig GetDefaults()
         {
@@ -100,6 +105,30 @@ namespace HudCompassMod
         {
             ShipAziTicker = Vector2D.Clamp(ShipAziTicker, new Vector2D(-1, -1), new Vector2D(1, 1));
             ShipEleTicker = Vector2D.Clamp(ShipEleTicker, new Vector2D(-1, -1), new Vector2D(1, 1));
+        }
+    }
+
+    public class GlobalConfig : Config<GlobalConfig>
+    {
+        [XmlElement(ElementName = "HudColor")]
+        public Color HudColor;
+
+        [XmlElement(ElementName = "HudScale")]
+        public double HudScale;
+
+        protected override GlobalConfig GetDefaults()
+        {
+            return new GlobalConfig
+            {
+                HudColor = Color.White,
+                HudScale = 1
+            };
+        }
+
+        public override void Validate()
+        {
+            HudScale = MathHelper.Clamp(HudScale, 0.1D, 10D);
+            //not sure what to do for the colour validation, im just going to leave it blank and hope
         }
     }
 }

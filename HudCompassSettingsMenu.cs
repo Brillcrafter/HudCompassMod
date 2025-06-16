@@ -20,6 +20,7 @@ namespace HudCompassMod
                         GetCameraSettings(),
                         GetShipSettings(),
                         GetShipTickerSettings(),
+                        GetHudSettings()
                     }
                 },
                 new ControlPage()
@@ -61,6 +62,7 @@ namespace HudCompassMod
                     var textField = sender as TerminalTextField;
                     double.TryParse(textField.Value, out Cfg.Camera.CameraAzi.X);
                     Cfg.Validate();
+                    _configChange = true;
                 },
                 ToolTip = new RichText(ToolTip.DefaultText)
                 {
@@ -79,6 +81,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Camera.CameraAzi.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 },
                 ToolTip = new RichText(ToolTip.DefaultText)
                 {
@@ -108,6 +111,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Camera.CameraEle.X);
                     Cfg.Validate();
+                    _configChange = true;
                 },
                 ToolTip = new RichText(ToolTip.DefaultText)
                 {
@@ -126,6 +130,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Camera.CameraEle.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
             var tile2 = new ControlTile()
@@ -157,6 +162,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Ship.ShipAzi.X);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
 
@@ -171,6 +177,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Ship.ShipAzi.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
             var tile1 = new ControlTile()
@@ -190,6 +197,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Ship.ShipEle.X);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
 
@@ -204,6 +212,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.Ship.ShipEle.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
             var tile2 = new ControlTile()
@@ -235,6 +244,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.ShipTicker.ShipAziTicker.X);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
 
@@ -249,6 +259,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.ShipTicker.ShipAziTicker.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
 
@@ -269,6 +280,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.ShipTicker.ShipEleTicker.X);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
 
@@ -283,6 +295,7 @@ namespace HudCompassMod
                     var textfield = sender as TerminalTextField;
                     double.TryParse(textfield.Value, out Cfg.ShipTicker.ShipEleTicker.Y);
                     Cfg.Validate();
+                    _configChange = true;
                 }
             };
             
@@ -297,6 +310,56 @@ namespace HudCompassMod
                 HeaderText = "Ship Azimuth and Elevation Ticker",
                 SubheaderText = "Control where the ship Azimuth and Elevation Tickers are displayed.",
                 TileContainer = { tile1, tile2 }
+            };
+        }
+
+        private ControlCategory GetHudSettings()
+        {
+            var hudColour = new TerminalColorPicker()
+            {
+                Name = "Hud Colour Picker",
+                ToolTip = new RichText(ToolTip.DefaultText)
+                {
+                    "Select the desired colour for the entire HUD"
+                },
+                ControlChangedHandler = (sender, args) =>
+                {
+                    var value = sender as TerminalColorPicker;
+                    if (value?.Value == null)
+                        return;
+                    Cfg.Global.HudColor = value.Value;
+                    Cfg.Validate();
+                    _configChange = true;
+                }
+            };
+
+            var hudScale = new TerminalTextField()
+            {
+                Name = "Hud Scale",
+                ToolTip = new RichText(ToolTip.DefaultText)
+                {
+                    "Set the size of all the HUD elements."
+                },
+                CustomValueGetter = () => Cfg.Global.HudScale.ToString(),
+                ControlChangedHandler = (sender, args) =>
+                {
+                    var textfield = sender as TerminalTextField;
+                    double.TryParse(textfield.Value, out Cfg.Global.HudScale);
+                    Cfg.Validate();
+                    _configChange = true;
+                }
+            };
+            
+            var tile1 = new ControlTile()
+            {
+                hudColour,
+                hudScale
+            };
+            return new ControlCategory()
+            {
+                HeaderText = "Global Hud Settings",
+                SubheaderText = "Control the HUD Colour and Scale.",
+                TileContainer = { tile1 }
             };
         }
 
