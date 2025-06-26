@@ -102,6 +102,9 @@ namespace HudCompassMod
             CanUpdate = true;
             HcConfig.Load();
             InitSettingsMenu();
+            if (Cfg.Global.HudColor != null && Cfg.Global.HudScale != null) return; //checking for old version
+            HcConfig.ResetConfig();
+            MyLog.Default.WriteLine(ModName + "Old config detected, resetting");
         }
 
         private void ClientReset() {}
@@ -252,7 +255,8 @@ namespace HudCompassMod
             projectedWorldUp = Vector3D.Normalize(projectedWorldUp);
             var cosTheta = Vector3D.Dot(shipUp, projectedWorldUp);
             var sinTheta = Vector3D.Dot(shipRight, projectedWorldUp);
-            var rollAngle = (float)Math.Atan2(sinTheta, cosTheta);
+            var rollAngleD = Math.Atan2(sinTheta, cosTheta);
+            var rollAngle = (float)MathHelper.Clamp(rollAngleD, -2 * Math.PI, 2 * Math.PI);
             return rollAngle;
         }
         
@@ -348,7 +352,7 @@ namespace HudCompassMod
                     default:
                     {
                         if (i < 0)
-                            _headingCompassClass.Add(new CompassDivisionClass(true,(360 - i * -1).ToString(),
+                            _headingCompassClass.Add(new CompassDivisionClass(true,(360 + i).ToString(),
                                 (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
                                     Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
                                     -1,Cfg.Global.HudScale)));

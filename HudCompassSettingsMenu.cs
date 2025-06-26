@@ -253,7 +253,7 @@ namespace HudCompassMod
                 Name = "Ship Azimuth Ticker Y",
                 Value = Cfg.ShipTicker.ShipAziTicker.Y.ToString(),
                 CharFilterFunc = numFilterFunc,
-                CustomValueGetter = () => Cfg.ShipTicker.ShipAziTicker.X.ToString(),
+                CustomValueGetter = () => Cfg.ShipTicker.ShipAziTicker.Y.ToString(),
                 ControlChangedHandler = (sender, args) =>
                 {
                     var textfield = sender as TerminalTextField;
