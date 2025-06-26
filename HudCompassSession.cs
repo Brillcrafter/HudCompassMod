@@ -102,9 +102,10 @@ namespace HudCompassMod
             CanUpdate = true;
             HcConfig.Load();
             InitSettingsMenu();
-            if (Cfg.Global.HudColor != null && Cfg.Global.HudScale != null) return; //checking for old version
+            if (Cfg.Global != null) return;
+            //baaaaaddddd. reset config
             HcConfig.ResetConfig();
-            MyLog.Default.WriteLine(ModName + "Old config detected, resetting");
+            MyLog.Default.Error(ModName + "Old config detected, resetting config");
         }
 
         private void ClientReset() {}
@@ -320,74 +321,75 @@ namespace HudCompassMod
                     //starting from the left
                     //these are for the cardinal directions
                     case 0:
-                        _headingCompassClass.Add(new CompassDivisionClass(true,"N", (double)i/100 
+                        _headingCompassClass.Add(new CompassDivisionClass(true, "N", (double)i / 100
                             , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100 , 0D),
+                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
                                 -1, Cfg.Global.HudScale)));
                         break;
                     case 90:
-                        _headingCompassClass.Add(new CompassDivisionClass(true, "E", (double)i/100
+                        _headingCompassClass.Add(new CompassDivisionClass(true, "E", (double)i / 100
                             , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                -1,Cfg.Global.HudScale)));
+                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                -1, Cfg.Global.HudScale)));
                         break;
                     case 180:
-                        _headingCompassClass.Add(new CompassDivisionClass(true, "S", (double)i/100
+                        _headingCompassClass.Add(new CompassDivisionClass(true, "S", (double)i / 100
                             , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                -1,Cfg.Global.HudScale)));
+                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                -1, Cfg.Global.HudScale)));
                         break;
                     case 270:
-                        _headingCompassClass.Add(new CompassDivisionClass(true, "W", (double)i/100
+                        _headingCompassClass.Add(new CompassDivisionClass(true, "W", (double)i / 100
                             , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                -1,Cfg.Global.HudScale)));
+                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                -1, Cfg.Global.HudScale)));
                         break;
                     case 360:
-                        _headingCompassClass.Add(new CompassDivisionClass(true, "N", (double)i/100
+                        _headingCompassClass.Add(new CompassDivisionClass(true, "N", (double)i / 100
                             , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                -1,Cfg.Global.HudScale)));
+                                Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                -1, Cfg.Global.HudScale)));
                         break;
                     default:
                     {
                         if (i < 0)
-                            _headingCompassClass.Add(new CompassDivisionClass(true,(360 + i).ToString(),
-                                (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                    -1,Cfg.Global.HudScale)));
+                            _headingCompassClass.Add(new CompassDivisionClass(true, (360 + i).ToString(),
+                                (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                    -1, Cfg.Global.HudScale)));
                         else if (i > 360)
-                            _headingCompassClass.Add(new CompassDivisionClass(true,(i - 360).ToString(),
-                                (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                    -1,Cfg.Global.HudScale)));
-                        else 
-                            _headingCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
-                                (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i/100, 0D),
-                                    -1,Cfg.Global.HudScale)));
+                            _headingCompassClass.Add(new CompassDivisionClass(true, (i - 360).ToString(),
+                                (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                    -1, Cfg.Global.HudScale)));
+                        else
+                            _headingCompassClass.Add(new CompassDivisionClass(true, i.ToString(),
+                                (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                                    Cfg.ShipTicker.ShipAziTicker, new Vector2D((double)i / 100, 0D),
+                                    -1, Cfg.Global.HudScale)));
                         break;
                     }
                 }
             }
+
             // for elevation ticker
             for (var i = -135; i < 135; i += 5)
             {
                 if (i < -90)
-                    _elevationCompassClass.Add(new CompassDivisionClass(true,(90 - i * -1).ToString(),
-                        (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                        Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i/100),
-                        -1,Cfg.Global.HudScale)));
+                    _elevationCompassClass.Add(new CompassDivisionClass(true, (90 - i * -1).ToString(),
+                        (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                            Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i / 100),
+                            -1, Cfg.Global.HudScale)));
                 else if (i > 90)
-                    _elevationCompassClass.Add(new CompassDivisionClass(true,(i - 90).ToString(),
-                        (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                            Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i/100),
-                        -1,Cfg.Global.HudScale)));
-                else 
-                    _elevationCompassClass.Add(new CompassDivisionClass(true,i.ToString(),
-                        (double)i/100 , new HudAPIv2.HUDMessage(new StringBuilder(1),
-                            Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i/100),
-                    -1,Cfg.Global.HudScale)));
+                    _elevationCompassClass.Add(new CompassDivisionClass(true, (i - 90).ToString(),
+                        (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                            Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i / 100),
+                            -1, Cfg.Global.HudScale)));
+                else
+                    _elevationCompassClass.Add(new CompassDivisionClass(true, i.ToString(),
+                        (double)i / 100, new HudAPIv2.HUDMessage(new StringBuilder(1),
+                            Cfg.ShipTicker.ShipEleTicker, new Vector2D(0D, (double)i / 100),
+                            -1, Cfg.Global.HudScale)));
             }
         }
         private void GridChange(VRage.Game.ModAPI.Interfaces.IMyControllableEntity previousEnt,
