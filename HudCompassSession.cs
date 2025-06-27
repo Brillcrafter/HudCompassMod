@@ -84,14 +84,8 @@ namespace HudCompassMod
             _hudApi?.Unload();
             Instance = null;
         }
-
-        private void SeamlessServerLoaded()
-        {
-            _registeredController = true;
-            MyAPIGateway.Session.Player.Controller.ControlledEntityChanged += GridChange;
-        }
-
-        private void SeamlessServerUnloaded()
+        
+       private void SeamlessServerUnloaded()
         {
             _registeredController = false;
             MyAPIGateway.Session.Player.Controller.ControlledEntityChanged -= GridChange;
@@ -198,43 +192,19 @@ namespace HudCompassMod
                     _hudCameraElevation.Message = new StringBuilder(Convert.ToInt32(cameraElevation).ToString());
                     _shipRollIndicator.Rotation = rollAngle;
                 }
-                if (Cfg.Camera.EnableCamera)
-                {
-                    _hudCameraAzimuth.Visible = true;
-                    _hudCameraElevation.Visible = true;
-                }
-                else
-                {
-                    _hudCameraAzimuth.Visible = false;
-                    _hudCameraElevation.Visible = false;
-                }
-                if (inCockpit)
-                {
-                    _hudShipAzimuth.Visible = true;
-                    _hudShipElevation.Visible = true;
-                    _shipRollIndicator.Visible = true;
-                }
-                else
-                {
-                    _hudShipAzimuth.Visible = false;
-                    _hudShipElevation.Visible = false;
-                    _shipRollIndicator.Visible = false;
-                }
 
+                _hudCameraAzimuth.Visible = _hudCameraElevation.Visible = Cfg.Camera.EnableCamera;
+                _hudShipAzimuth.Visible = _hudShipElevation.Visible = _shipRollIndicator.Visible = inCockpit;
+                
                 if (!_configChange) return;
-                _hudShipAzimuth.InitialColor = Cfg.Global.HudColor;
+                _hudShipAzimuth.InitialColor = _hudShipElevation.InitialColor = _hudCameraAzimuth.InitialColor = 
+                    _hudCameraElevation.InitialColor = _shipRollIndicator.BillBoardColor = Cfg.Global.HudColor;
                 _hudShipAzimuth.Origin = Cfg.Ship.ShipAzi;
-                _hudShipAzimuth.Scale = Cfg.Global.HudScale;
-                _hudShipElevation.InitialColor = Cfg.Global.HudColor;
-                _hudShipElevation.Scale = Cfg.Global.HudScale;
+                _hudShipAzimuth.Scale = _hudShipElevation.Scale = _hudCameraAzimuth.Scale = 
+                    _hudCameraElevation.Scale = Cfg.Global.HudScale;
                 _hudShipElevation.Origin = Cfg.Ship.ShipEle;
-                _hudCameraAzimuth.InitialColor = Cfg.Global.HudColor;
-                _hudCameraAzimuth.Scale = Cfg.Global.HudScale;
                 _hudCameraAzimuth.Origin = Cfg.Camera.CameraAzi;
-                _hudCameraElevation.InitialColor = Cfg.Global.HudColor;
-                _hudCameraElevation.Scale = Cfg.Global.HudScale;
                 _hudCameraElevation.Origin = Cfg.Camera.CameraEle;
-                _shipRollIndicator.BillBoardColor = Cfg.Global.HudColor;
             }
             else
             {
