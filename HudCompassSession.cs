@@ -129,6 +129,7 @@ namespace HudCompassMod
             var cameraAzimuth = Math.Atan2(cameraForward.X, cameraForward.Y) * (180.0 / Math.PI);
             var cameraElevation = Math.Asin(cameraForward.Z) * (180.0 / Math.PI);
             cameraAzimuth = (cameraAzimuth + 360) % 360;
+            cameraAzimuth = MathHelperD.Clamp(cameraAzimuth, 0, 360);
             cameraElevation = MathHelperD.Clamp(cameraElevation, -90, 90);
             
             if (_controllableEntity != null)
@@ -139,6 +140,7 @@ namespace HudCompassMod
                 shipAzimuth = Math.Atan2(shipForward.X, shipForward.Y) * (180.0 / Math.PI);
                 shipElevation = Math.Asin(shipForward.Z) * (180.0 / Math.PI);
                 shipAzimuth = (shipAzimuth + 360) % 360;
+                shipAzimuth = MathHelperD.Clamp(shipAzimuth, 0, 360);
                 shipElevation = MathHelperD.Clamp(shipElevation, -90, 90);
             }
             DrawMessages(shipAzimuth, shipElevation, cameraAzimuth, cameraElevation, rollFloat , inCockpit);
